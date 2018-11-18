@@ -35,10 +35,5 @@
 variables.cache
 python/cross2d.xml
 .sconsign.dblite
-*.pyc
-*.pyc
-python/src/LWPR_Module.egg-info/dependency_links.txt
-python/src/LWPR_Module.egg-info/PKG-INFO
-python/src/LWPR_Module.egg-info/requires.txt
-python/src/LWPR_Module.egg-info/SOURCES.txt
-python/src/LWPR_Module.egg-info/top_level.txt
+*.pyc*
+*.egg-info*
