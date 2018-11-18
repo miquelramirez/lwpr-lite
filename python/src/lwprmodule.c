@@ -754,6 +754,29 @@ static PyObject *PyLWPR_beta0(PyLWPR* self, PyObject* args) {
     return PyFloat_FromDouble(model->sub[dim].rf[n]->beta0);
 }
 
+static PyObject *PyLWPR_rf_trustworthy(PyLWPR* self, PyObject* args) {
+    int dim, n;
+    LWPR_Model *model = &(self->model);
+
+    if (!PyArg_ParseTuple(args, "ii", &dim, &n))  return NULL;
+
+    if (dim<0 || dim>=model->nOut) {
+       PyErr_SetString(PyExc_TypeError, "First parameter must indicate output dimension (0 <= dim < model.nOut).");
+       return NULL;
+    }
+
+    if (n<0 || n>=model->sub[dim].numRFS) {
+       PyErr_SetString(PyExc_TypeError, "Second parameter must indicate receptive field (0 <= n < model.num_rf[dim]).");
+       return NULL;
+    }
+    if (model->sub[dim].rf[n]->trustworthy) {
+        Py_INCREF(Py_True);
+        return Py_True;
+    }
+    Py_INCREF(Py_False);
+    return  Py_False;
+}
+
 static PyObject *PyLWPR_rf_D(PyLWPR *self, PyObject *args) {
    int dim, n;
    LWPR_Model *model = &(self->model);
@@ -835,6 +858,8 @@ static PyMethodDef PyLWPR_methods[] = {
     "rf_D(dim,n) retrieves the distance metric of the n-th receptive field in output dimension dim."},
     {"rf_D", (PyCFunction)PyLWPR_rf_D, METH_VARARGS,
     "rf_D(dim,n) retrieves the distance metric of the n-th receptive field in output dimension dim."},
+    {"rf_trustworthy", (PyCFunction)PyLWPR_rf_trustworthy, METH_VARARGS,
+    "rf_trustworthy(dim,n) returns true if the n-th receptive field in the output dimension dim is deemed trustworthy"},
     {"beta", (PyCFunction)PyLWPR_beta, METH_VARARGS,
     "beta(dim,n) retrieves the slope of the n-th receptive field in output dimension dim."},
     {"beta0", (PyCFunction)PyLWPR_beta0, METH_VARARGS,
