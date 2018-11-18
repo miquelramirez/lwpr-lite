@@ -716,6 +716,44 @@ static PyObject *PyLWPR_rf_center(PyLWPR *self, PyObject *args) {
    return get_array_from_vector(model->nIn, model->sub[dim].rf[n]->c);
 }
 
+static PyObject *PyLWPR_beta(PyLWPR* self, PyObject* args) {
+    int dim, n;
+    LWPR_Model *model = &(self->model);
+
+    if (!PyArg_ParseTuple(args, "ii", &dim, &n))  return NULL;
+
+    if (dim<0 || dim>=model->nOut) {
+       PyErr_SetString(PyExc_TypeError, "First parameter must indicate output dimension (0 <= dim < model.nOut).");
+       return NULL;
+    }
+
+    if (n<0 || n>=model->sub[dim].numRFS) {
+       PyErr_SetString(PyExc_TypeError, "Second parameter must indicate receptive field (0 <= n < model.num_rf[dim]).");
+       return NULL;
+    }
+
+    return get_array_from_vector(model->nIn, model->sub[dim].rf[n]->beta);
+}
+
+static PyObject *PyLWPR_beta0(PyLWPR* self, PyObject* args) {
+    int dim, n;
+    LWPR_Model *model = &(self->model);
+
+    if (!PyArg_ParseTuple(args, "ii", &dim, &n))  return NULL;
+
+    if (dim<0 || dim>=model->nOut) {
+       PyErr_SetString(PyExc_TypeError, "First parameter must indicate output dimension (0 <= dim < model.nOut).");
+       return NULL;
+    }
+
+    if (n<0 || n>=model->sub[dim].numRFS) {
+       PyErr_SetString(PyExc_TypeError, "Second parameter must indicate receptive field (0 <= n < model.num_rf[dim]).");
+       return NULL;
+    }
+
+    return PyFloat_FromDouble(model->sub[dim].rf[n]->beta0);
+}
+
 static PyObject *PyLWPR_rf_D(PyLWPR *self, PyObject *args) {
    int dim, n;
    LWPR_Model *model = &(self->model);
@@ -780,25 +818,31 @@ static PyObject *PyLWPR_write_binary(PyLWPR *self, PyObject *args) {
 
 static PyMethodDef PyLWPR_methods[] = {
     {"update", (PyCFunction)PyLWPR_update, METH_VARARGS,
-     "Update an LWPR model given an (input, output) training sample. Returns current prediction."},
+    "Update an LWPR model given an (input, output) training sample. Returns current prediction."},
     {"update_maxw", (PyCFunction)PyLWPR_update_maxw, METH_VARARGS,
-     "Update an LWPR model given an (input, output) training sample. Returns current prediction and maximum activation."},
+    "Update an LWPR model given an (input, output) training sample. Returns current prediction and maximum activation."},
     {"predict", (PyCFunction)PyLWPR_predict, METH_VARARGS,
-     "Compute prediction of LWPR model for a given input sample"},
+    "Compute prediction of LWPR model for a given input sample"},
     {"predict_conf", (PyCFunction)PyLWPR_predict_conf, METH_VARARGS,
-     "Compute prediction and confidence bounds of LWPR model for a given input sample"},
+    "Compute prediction and confidence bounds of LWPR model for a given input sample"},
     {"predict_conf_maxw", (PyCFunction)PyLWPR_predict_conf_maxw, METH_VARARGS,
-     "Compute prediction, confidence bounds, and maximal activation of LWPR model for a given input sample"},
+    "Compute prediction, confidence bounds, and maximal activation of LWPR model for a given input sample"},
     {"predict_J", (PyCFunction)PyLWPR_predict_J, METH_VARARGS,
-     "Compute prediction and Jacobi matrix of LWPR model for a given input sample"},
+    "Compute prediction and Jacobi matrix of LWPR model for a given input sample"},
     {"rf_center", (PyCFunction)PyLWPR_rf_center, METH_VARARGS,
-     "rf_center(dim,n) retrieves the center of the n-th receptive field in output dimension dim."},
+    "rf_center(dim,n) retrieves the center of the n-th receptive field in output dimension dim."},
     {"rf_D", (PyCFunction)PyLWPR_rf_D, METH_VARARGS,
-     "rf_D(dim,n) retrieves the distance metric of the n-th receptive field in output dimension dim."},
+    "rf_D(dim,n) retrieves the distance metric of the n-th receptive field in output dimension dim."},
+    {"rf_D", (PyCFunction)PyLWPR_rf_D, METH_VARARGS,
+    "rf_D(dim,n) retrieves the distance metric of the n-th receptive field in output dimension dim."},
+    {"beta", (PyCFunction)PyLWPR_beta, METH_VARARGS,
+    "beta(dim,n) retrieves the slope of the n-th receptive field in output dimension dim."},
+    {"beta0", (PyCFunction)PyLWPR_beta0, METH_VARARGS,
+    "beta0(dim,n) retrieves the offset of the n-th recepetive field in output dimension dim."},
     {"write_XML", (PyCFunction)PyLWPR_write_XML, METH_VARARGS,
-     "write_XML(filename) writes the LWPR model to an XML file."},
+    "write_XML(filename) writes the LWPR model to an XML file."},
     {"write_binary", (PyCFunction)PyLWPR_write_binary, METH_VARARGS,
-     "write_binary(filename) writes the LWPR model to a binary, platform-dependent file."},
+    "write_binary(filename) writes the LWPR model to a binary, platform-dependent file."},
     {NULL}  /* Sentinel */
 };
 
