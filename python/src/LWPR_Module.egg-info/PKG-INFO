@@ -1,0 +1,10 @@
+Metadata-Version: 2.1
+Name: LWPR-Module
+Version: 1.1
+Summary: Python wrapper around LWPR library
+Home-page: UNKNOWN
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
+Provides-Extra: dev
+Provides-Extra: test

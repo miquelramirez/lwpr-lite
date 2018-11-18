@@ -1,0 +1,7 @@
+README.md
+src/lwprmodule.c
+src/LWPR_Module.egg-info/PKG-INFO
+src/LWPR_Module.egg-info/SOURCES.txt
+src/LWPR_Module.egg-info/dependency_links.txt
+src/LWPR_Module.egg-info/requires.txt
+src/LWPR_Module.egg-info/top_level.txt

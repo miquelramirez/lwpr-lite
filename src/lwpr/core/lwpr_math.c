@@ -5,7 +5,7 @@ Contact: sethu.vijayakumar@ed.ac.uk
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
-License as published by the Free Software Foundation; either 
+License as published by the Free Software Foundation; either
 version 2.1 of the License, or (at your option) any later version.
 
 This library is distributed in the hope that it will be useful,
@@ -19,7 +19,7 @@ Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 *********************************************************************/
 #include <math.h>
 #include <string.h>
-#include <lwpr_math.h>
+#include <lwpr/core/lwpr_math.h>
 
 double lwpr_math_norm2(const double *x, int n) {
    double norm = 0.0;
@@ -36,9 +36,9 @@ double lwpr_math_norm2(const double *x, int n) {
       case 3: norm += x[2] * x[2];
       case 2: norm += x[1] * x[1];
       case 1: norm += x[0] * x[0];
-   }         
+   }
    return norm;
-   
+
 }
 
 double lwpr_math_dot_product(const double *x,const double *y,int n) {
@@ -56,7 +56,7 @@ double lwpr_math_dot_product(const double *x,const double *y,int n) {
       case 3: dp += y[2] * x[2];
       case 2: dp += y[1] * x[1];
       case 1: dp += y[0] * x[0];
-   }         
+   }
    return dp;
 }
 
@@ -83,7 +83,7 @@ void lwpr_math_scalar_vector(double *y, double a,const double *x,int n) {
       case 3: y[2] = a*x[2];
       case 2: y[1] = a*x[1];
       case 1: y[0] = a*x[0];
-   }         
+   }
 }
 
 void lwpr_math_add_scalar_vector(double *y, double a,const double *x,int n) {
@@ -112,7 +112,7 @@ void lwpr_math_add_scalar_vector(double *y, double a,const double *x,int n) {
       case 3: y[2] += a*x[2];
       case 2: y[1] += a*x[1];
       case 1: y[0] += a*x[0];
-   }      
+   }
 }
 
 void lwpr_math_scale_add_scalar_vector(double b, double *y, double a,const double *x,int n) {
@@ -138,52 +138,52 @@ void lwpr_math_scale_add_scalar_vector(double b, double *y, double a,const doubl
       case 3: y[2] = b*y[2] + a*x[2];
       case 2: y[1] = b*y[1] + a*x[1];
       case 1: y[0] = b*y[0] + a*x[0];
-   }      
+   }
 }
 
 int lwpr_math_cholesky(int N,int Ns,double *R,const double *A) {
    int i,j,k;
    double A_00, R_00;
-   
+
    if (A!=NULL) {
       memcpy(R,A,N*Ns*sizeof(double));
    }
 
    A_00 = R[0];
    if (A_00 <= 0) return 0;
-      
+
    R[0] = R_00 = sqrt(A_00);
 
    if (N > 1) {
       double A_01 = R[Ns];
       double A_11 = R[1+Ns];
       double R_01,diag;
-      
+
       R_01 = A_01 / R_00;
       diag = A_11 - R_01 * R_01;
 
       if (diag<=0) return 0;
 
       R[0+Ns]=R_01;
-      R[1+Ns]=sqrt(diag); 
+      R[1+Ns]=sqrt(diag);
 
       for (k = 2; k < N; k++) {
          double A_kk = R[k+k*Ns];
          double diag;
-         
+
          for (i = 0; i < k; i++) {
             double sum;
             double A_ik = R[i+k*Ns];
             double A_ii = R[i+i*Ns];
-  
+
             sum = lwpr_math_dot_product(R+i*Ns,R+k*Ns,i);
-  
+
             A_ik = (A_ik-sum)/A_ii;
             R[i+k*Ns]=A_ik;
          }
 
          diag = A_kk - lwpr_math_dot_product(R+k*Ns,R+k*Ns,k);
-         if (diag <= 0) return 0; 
+         if (diag <= 0) return 0;
          R[k+k*Ns]=sqrt(diag);
       }
    }
@@ -195,4 +195,3 @@ int lwpr_math_cholesky(int N,int Ns,double *R,const double *A) {
    }
    return 1;
 }
-

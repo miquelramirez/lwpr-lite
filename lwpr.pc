@@ -1,0 +1,11 @@
+
+prefix=/mnt/d/Users/Miquel/Documents/GitHub/lwpr-lite
+exec_prefix=.
+includedir=./include
+libdir=${exec_prefix}/lib
+
+Name: lwpr
+Description: The Dilithium Dynamic Programming library
+Version: 0.0.1
+Cflags: -Wall -pedantic -O3 -DNDEBUG -DBOOST_SYSTEM_NO_DEPRECATED -isystem/usr/local/include -isystem/home/bowman/local/include -I/mnt/d/Users/Miquel/Documents/GitHub/lwpr-lite/include -I${includedir}
+Libs:  -L/mnt/d/Users/Miquel/Documents/GitHub/lwpr-lite/.build -L${libdir} -llwpr

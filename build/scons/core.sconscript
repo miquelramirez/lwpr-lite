@@ -1,0 +1,36 @@
+
+import os
+import util
+
+Import('env', 'sources', 'headers')
+
+module_src = os.path.join(env['src'], 'lwpr', 'core')
+sources += util.locate_source_files(module_src, '*.c')
+headers += util.locate_source_files(module_src, '*.h')
+headers += util.locate_source_files(module_src, '*.hh')
+headers += util.locate_source_files(module_src, '*.hpp')
+
+#rapidjson_base_dir = os.path.join(env['vendor'], 'rapidjson')
+#rapidjson_inc_dir = os.path.join(rapidjson_base_dir, 'include')
+include_paths = []
+
+
+env.Append(CCFLAGS = ['-Wall', '-pedantic' ])  # Flags common to all options
+env.Append(CPPPATH = [os.path.abspath(p) for p in include_paths])
+
+
+if env['edebug']:
+	env.Append( CCFLAGS = ['-g', '-DDEBUG', '-DEDEBUG',  '-DBOOST_SYSTEM_NO_DEPRECATED' ] )
+	env['libname'] ='lwpr-edebug'
+elif env['debug']:
+	env.Append( CCFLAGS = ['-g', '-DDEBUG',  '-DBOOST_SYSTEM_NO_DEPRECATED' ] )
+	env['libname'] ='lwpr-debug'
+else:
+	env.Append( CCFLAGS = ['-O3', '-DNDEBUG',  '-DBOOST_SYSTEM_NO_DEPRECATED' ] )
+	env['libname'] ='lwpr'
+
+libs = []
+env.Append( LIBS = libs )
+
+lib_paths = [ os.path.join(env['lwpr'], env['build_basename'])]
+env.Append( LIBPATH = [ os.path.abspath(p) for p in lib_paths ] )

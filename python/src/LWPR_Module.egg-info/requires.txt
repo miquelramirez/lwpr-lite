@@ -1,0 +1,10 @@
+setuptools
+numpy
+
+[dev]
+pytest
+tox
+
+[test]
+pytest
+tox

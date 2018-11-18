@@ -34,8 +34,12 @@ Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include <lwpr_xml.h>
 #include <string.h>
 #include <vector>
-#include <stdexcept>
-#include <Eigen/Dense>
+
+/** \brief doubleVec Shortcut typedef for the vector object utilised in the C++
+   implementation of LWPR 
+   \ingroup LWPR_CPP   
+*/
+typedef std::vector<double> doubleVec;
 
 /** \brief Simple class for describing exceptions that may be
    thrown during calls to LWPR methods 
@@ -117,23 +121,23 @@ class LWPR_ReceptiveFieldObject {
    }
    
    /** \brief Returns the weighted mean of the input data, as seen by the receptive field (nIn)*/
-   Eigen::VectorXd meanX() const {
-       Eigen::VectorXd mx(nIn);   
-      memcpy(mx.data(), RF->mean_x, sizeof(double)*nIn);
+   doubleVec meanX() const {
+      doubleVec mx(nIn);   
+      memcpy(&mx[0], RF->mean_x, sizeof(double)*nIn);
       return mx;
    }   
    
    /** \brief Returns the weighted variance of the input data, as seen by the receptive field (nIn)*/   
-   Eigen::VectorXd varX() const {
-       Eigen::VectorXd vx(nIn);   
-      memcpy(vx.data(), RF->var_x, sizeof(double)*nIn);
+   doubleVec varX() const {
+      doubleVec vx(nIn);   
+      memcpy(&vx[0], RF->var_x, sizeof(double)*nIn);
       return vx;
    } 
    
    /** \brief Returns the center vector of the receptive field (nIn) */
-   Eigen::VectorXd center() const {
-       Eigen::VectorXd c(nIn);
-      memcpy(c.data(), RF->c, sizeof(double)*nIn);    
+   doubleVec center() const {
+      doubleVec c(nIn);
+      memcpy(&c[0], RF->c, sizeof(double)*nIn);    
       return c;  
    }
    
@@ -143,34 +147,43 @@ class LWPR_ReceptiveFieldObject {
    }
 
    /** \brief Returns the distance metric of the receptive field, as a vector of vectors (nIn x nIn) */
-   Eigen::MatrixXd D() const {
-      Eigen::MatrixXd ds(nIn, nIn);
-      memcpy(ds.data(), RF->D, sizeof(double)*(nIn*nIn));    
+   std::vector<doubleVec> D() const {
+      std::vector<doubleVec> ds(nIn);
+      for (int i=0;i<nIn;i++) {
+         ds[i].resize(nIn);
+         memcpy(&ds[i][0], RF->D + i*nInS, sizeof(double)*nIn);    
+      }
       return ds;
    }
 
    /** \brief Returns the Cholesky decomposition of the RF's distance metric. The result is a
        vector of vectors with varying length (simulating a triagonal matrix) */   
-   Eigen::MatrixXd M() const {
-      Eigen::MatrixXd ms(nIn, nIn);
-      ms.setZero();
+   std::vector<doubleVec> M() const {
+      std::vector<doubleVec> ms(nIn);
       for (int i=0;i<nIn;i++) {
-         memcpy(ms.data() + i*nInS, RF->M + i*nInS, sizeof(double)*(i+1));    
+         ms[i].resize(i+1);
+         memcpy(&ms[i][0], RF->M + i*nInS, sizeof(double)*(i+1));    
       }
       return ms;
    }
    
    /** \brief Returns the PLS regression directions as a vector of vectors (nReg x nIn) */
-   Eigen::MatrixXd U() const {
-      Eigen::MatrixXd us(RF->nReg, nIn);
-      memcpy(us.data(), RF->U, sizeof(double)*(RF->nReg*nIn));
+   std::vector<doubleVec> U() const {
+      std::vector<doubleVec> us(RF->nReg);
+      for (int i=0;i<RF->nReg;i++) {
+         us[i].resize(nIn);
+         memcpy(&us[i][0], RF->U + i*nInS, sizeof(double)*nIn);
+      }
       return us;
    }   
    
    /** \brief Returns the PLS projections as a vector of vectors (nReg x nIn) */   
-   Eigen::MatrixXd P() const {
-      Eigen::MatrixXd ps(RF->nReg, nIn);
-      memcpy(ps.data(), RF->P, sizeof(double)*(RF->nReg*nIn));
+   std::vector<doubleVec> P() const {
+      std::vector<doubleVec> ps(RF->nReg);
+      for (int i=0;i<RF->nReg;i++) {
+         ps[i].resize(nIn);
+         memcpy(&ps[i][0], RF->P + i*nInS, sizeof(double)*nIn);
+      }
       return ps;
    }   
    
@@ -180,65 +193,40 @@ class LWPR_ReceptiveFieldObject {
    }
    
    /** \brief Returns the PLS regression coefficients of the local model (nReg) */   
-   Eigen::VectorXd beta() const {
-       Eigen::VectorXd be(RF->nReg);
-      memcpy(be.data(), RF->beta, sizeof(double)*RF->nReg);      
+   doubleVec beta() const {
+      doubleVec be(RF->nReg);
+      memcpy(&be[0], RF->beta, sizeof(double)*RF->nReg);      
       return be;
-   }
-
-   /**
-    * Compute PLS variable importance for projection
-    * (nIn)
-    * Value are arround 0.0 and 2.0. Below 0.8 or 1.0
-    * is said to be little importance on prediction
-    */
-   Eigen::VectorXd vip() const {
-       Eigen::VectorXd ss(RF->nReg);
-       memcpy(ss.data(), RF->SSs2, sizeof(double)*RF->nReg);      
-       Eigen::MatrixXd u = U();
-       Eigen::VectorXd b = beta();
-       Eigen::VectorXd v(nIn);
-       for (size_t j=0;j<(size_t)v.size();j++) {
-           double sum1 = 0.0;
-           double sum2 = 0.0;
-           for (size_t k=0;k<(size_t)RF->nReg;k++) {
-               sum1 += b(k)*b(k)*ss(k)*u(k, j)*u(k, j)/u.row(k).squaredNorm();
-               sum2 += b(k)*b(k)*ss(k);
-           }
-           v(j) = sqrt(nIn*sum1/sum2);
-       }
-
-       return v;
    }
    
    /** \brief Returns the weighted number of training data the RF has seen (nReg) */
-   Eigen::VectorXd numData() const {
-       Eigen::VectorXd nd(RF->nReg);
-      memcpy(nd.data(), RF->n_data, sizeof(double)*RF->nReg);      
+   doubleVec numData() const {
+      doubleVec nd(RF->nReg);
+      memcpy(&nd[0], RF->n_data, sizeof(double)*RF->nReg);      
       return nd;
    }
 
    
    /** \brief Returns the slope of the local model (simulating ordinary linear regression) (nIn) */
-   Eigen::VectorXd slope() const {
-      Eigen::VectorXd s(nIn);
-      Eigen::VectorXd t(nIn);
+   doubleVec slope() const {
+      doubleVec s(nIn);
+      doubleVec t(nIn);
       
       if (RF->slopeReady) {
-         memcpy(s.data(), RF->slope, sizeof(double)*RF->nReg);
+         memcpy(&s[0], RF->slope, sizeof(double)*RF->nReg);
       } else {
          // calculate the slope by hand, without using any model-internal storage
          // we do this because we do not want this code to interfere with the "real"
          // LWPR_Model
-         lwpr_math_scalar_vector(s.data(), RF->beta[0], RF->U, nIn);
+         lwpr_math_scalar_vector(&s[0], RF->beta[0], RF->U, nIn);
          for (int i=1;i<RF->nReg;i++) {
-            lwpr_math_scalar_vector(t.data(), RF->beta[i], RF->U + i*nInS, nIn);
+            lwpr_math_scalar_vector(&t[0], RF->beta[i], RF->U + i*nInS, nIn);
             for (int j=i-1;j>=0;j--) {
                // left-multiply  (I - u_j * p_j^T)
-               double dp = lwpr_math_dot_product(t.data(),RF->P + j*nInS, nIn);
-               lwpr_math_add_scalar_vector(t.data(), dp, RF->U + j*nInS, nIn);
+               double dp = lwpr_math_dot_product(&t[0],RF->P + j*nInS, nIn);
+               lwpr_math_add_scalar_vector(&t[0], dp, RF->U + j*nInS, nIn);
             }
-            for (int m=0;m<nIn;m++) s(m)+=t(m);
+            for (int m=0;m<nIn;m++) s[m]+=t[m];
          }
       }
       return s;
@@ -274,7 +262,7 @@ class LWPR_Object {
       In case there is insufficient memory for allocating the underlying
       LWPR_Model (C library), an OUT_OF_MEMORY exception is thrown.
    */
-   LWPR_Object(int nIn, int nOut = 1) {
+   LWPR_Object(int nIn, int nOut) {
       if (!lwpr_init_model(&model, nIn, nOut, NULL)) {
          throw LWPR_Exception(LWPR_Exception::OUT_OF_MEMORY);
       }
@@ -322,24 +310,22 @@ class LWPR_Object {
    
    /** \brief Write the model to an XML file
       \param filename   Name of the file, which will we overwritten if it already exists
+      \return
+         - 1 in case of success
+         - 0 if the file could not be written to
    */
-   void writeXML(const char *filename) {
-      int success = lwpr_write_xml(&model, filename);
-      if (!success) {
-          throw std::runtime_error(
-            "LWPR unable to write XML: " + std::string(filename));
-      }
+   int writeXML(const char *filename) {
+      return lwpr_write_xml(&model, filename);
    }
    
    /** \brief Write the model to a binary file
       \param filename   Name of the file, which will we overwritten if it already exists
+      \return
+         - 1 in case of success
+         - 0 if the file could not be written to
    */
-   void writeBinary(const char *filename) {
-      int success = lwpr_write_binary(&model, filename);
-      if (!success) {
-          throw std::runtime_error(
-            "LWPR unable to write XML: " + std::string(filename));
-      }
+   int writeBinary(const char *filename) {
+      return lwpr_write_binary(&model, filename);
    }
       
    /** \brief Updates an LWPR model with a given input/output pair (x,y). 
@@ -356,8 +342,8 @@ class LWPR_Object {
       \exception LWPR_Exception::BAD_OUTPUT_DIM
          if the parameter y does not match the model dimensions
    */  
-   Eigen::VectorXd update(const Eigen::VectorXd& x, const Eigen::VectorXd& y) {
-       Eigen::VectorXd yp(model.nOut);
+   doubleVec update(const doubleVec& x, const doubleVec& y) {
+      doubleVec yp(model.nOut);
       
       if (x.size()!=(unsigned) model.nIn) {
          throw LWPR_Exception(LWPR_Exception::BAD_INPUT_DIM);
@@ -367,15 +353,10 @@ class LWPR_Object {
          throw LWPR_Exception(LWPR_Exception::BAD_OUTPUT_DIM);
       }
 
-      if (!lwpr_update(&model, x.data(), y.data(), yp.data(), NULL)) {
+      if (!lwpr_update(&model, &x[0], &y[0], &yp[0], NULL)) {
          throw LWPR_Exception(LWPR_Exception::OUT_OF_MEMORY);
       }
       return yp;
-   }
-   Eigen::VectorXd update(const Eigen::VectorXd& x, double y) {
-       Eigen::VectorXd yy(1);
-       yy(0) = y;
-       return update(x, yy);
    }
    
    /** \brief Computes the prediction of an LWPR model given an 
@@ -388,14 +369,14 @@ class LWPR_Object {
       \exception LWPR_Exception::BAD_INPUT_DIM  
          if the parameter x does not match the model dimensions
    */      
-   Eigen::VectorXd predict(const Eigen::VectorXd& x, double cutoff = 0.001) {
-       Eigen::VectorXd yp(model.nOut);   
+   doubleVec predict(const doubleVec& x, double cutoff = 0.001) {
+      doubleVec yp(model.nOut);   
 
       if (x.size()!=(unsigned) model.nIn) {
          throw LWPR_Exception(LWPR_Exception::BAD_INPUT_DIM);
       }      
 
-      lwpr_predict(&model, x.data(), cutoff, yp.data(), NULL, NULL);
+      lwpr_predict(&model, &x[0], cutoff, &yp[0], NULL, NULL);
       return yp;
    }
    
@@ -412,15 +393,15 @@ class LWPR_Object {
       \exception LWPR_Exception::BAD_INPUT_DIM  
          if the parameter x does not match the model dimensions
    */      
-   Eigen::VectorXd predict(const Eigen::VectorXd& x, Eigen::VectorXd& confidence, double cutoff = 0.001) {
-       Eigen::VectorXd yp(model.nOut);   
+   doubleVec predict(const doubleVec& x, doubleVec& confidence, double cutoff = 0.001) {
+      doubleVec yp(model.nOut);   
       
       if (x.size()!=(unsigned) model.nIn) {
          throw LWPR_Exception(LWPR_Exception::BAD_INPUT_DIM);
       }      
       if (confidence.size()!=(unsigned) model.nOut) confidence.resize(model.nOut);
 
-      lwpr_predict(&model, x.data(), cutoff, yp.data(), confidence.data(), NULL);
+      lwpr_predict(&model, &x[0], cutoff, &yp[0], &confidence[0], NULL);
       return yp;
    }  
    
@@ -439,8 +420,8 @@ class LWPR_Object {
       \exception LWPR_Exception::BAD_INPUT_DIM  
          if the parameter x does not match the model dimensions
    */      
-   Eigen::VectorXd predict(const Eigen::VectorXd& x, Eigen::VectorXd& confidence, Eigen::VectorXd& maxW, double cutoff = 0.001) {
-       Eigen::VectorXd yp(model.nOut);   
+   doubleVec predict(const doubleVec& x, doubleVec& confidence, doubleVec& maxW, double cutoff = 0.001) {
+      doubleVec yp(model.nOut);   
       
       if (x.size()!=(unsigned) model.nIn) {
          throw LWPR_Exception(LWPR_Exception::BAD_INPUT_DIM);
@@ -448,7 +429,7 @@ class LWPR_Object {
       if (confidence.size()!=(unsigned) model.nOut) confidence.resize(model.nOut);
       if (maxW.size()!=(unsigned) model.nOut) maxW.resize(model.nOut);
 
-      lwpr_predict(&model, x.data(), cutoff, yp.data(), confidence.data(), maxW.data());
+      lwpr_predict(&model, &x[0], cutoff, &yp[0], &confidence[0], &maxW[0]);
       return yp;
    } 
 
@@ -456,16 +437,24 @@ class LWPR_Object {
     * Compute the Jabobian of LWPR model at given input vector x
     * The returned jacobian is nOut x nIn matrix in major column.
     */
-   Eigen::MatrixXd predictJ(const Eigen::VectorXd& x, double cutoff = 0.001) {
-      Eigen::VectorXd yp(model.nOut);
-      Eigen::MatrixXd J(model.nOut, model.nIn);
+   std::vector<doubleVec> predictJ(const doubleVec& x, double cutoff = 0.001) {
+      doubleVec yp(model.nOut);
+      doubleVec J(model.nOut*model.nIn);
 
       if (x.size()!=(unsigned) model.nIn) {
          throw LWPR_Exception(LWPR_Exception::BAD_INPUT_DIM);
       }      
 
-      lwpr_predict_J(&model, x.data(), cutoff, yp.data(), J.data());
-      return J;
+      lwpr_predict_J(&model, &x[0], cutoff, &yp[0], &J[0]);
+
+      std::vector<doubleVec> JJ(model.nOut);
+      for (size_t i=0;i<(size_t)model.nOut;i++) {
+         JJ[i] = doubleVec(model.nIn);
+         for (size_t j=0;j<(size_t)model.nIn;j++) {
+            JJ[i][j] = J[j*model.nOut + i];
+         }
+      }
+      return JJ;
    }
    
    /** \brief Sets a spherical initial distance metric
@@ -486,13 +475,13 @@ class LWPR_Object {
       \exception LWPR_Exception::BAD_INIT_D
          if the parameter initD gives rise to a non-positive matrix
    */
-   void setInitD(const Eigen::MatrixXd& initD) {
+   void setInitD(const doubleVec& initD) {
       if (initD.size()==(unsigned) model.nIn) {
-         if (!lwpr_set_init_D_diagonal(&model,initD.data())) {
+         if (!lwpr_set_init_D_diagonal(&model,&initD[0])) {
             throw LWPR_Exception(LWPR_Exception::BAD_INIT_D);
          }
       } else if (initD.size()==(unsigned) (model.nIn*model.nIn)) {
-         if (!lwpr_set_init_D(&model,initD.data(),model.nIn)) {
+         if (!lwpr_set_init_D(&model,&initD[0],model.nIn)) {
             throw LWPR_Exception(LWPR_Exception::BAD_INIT_D);
          }
       } else {
@@ -594,68 +583,68 @@ class LWPR_Object {
    bool useMeta() { return (bool) model.meta; }
    
    /** \brief Returns learning rate for 2nd order distance matrix updates */      
-   double metaRate() const { return model.meta_rate; }
+   double metaRate() { return model.meta_rate; }
 
    /** \brief Returns the kernel */   
    LWPR_Kernel kernel() { return model.kernel; }
    
    /** \brief Returns the mean of all input samples the model has seen */
-   Eigen::VectorXd meanX() {
-       Eigen::VectorXd mx(model.nIn);
-      memcpy(model.mean_x,mx.data(),sizeof(double)*model.nIn);
+   doubleVec meanX() {
+      doubleVec mx(model.nIn);
+      memcpy(model.mean_x,&mx[0],sizeof(double)*model.nIn);
       return mx;
    }
 
    /** \brief Returns the variance of all input samples the model has seen */   
-   Eigen::VectorXd varX() {
-       Eigen::VectorXd vx(model.nIn);
-      memcpy(model.var_x, vx.data(),sizeof(double)*model.nIn);
+   doubleVec varX() {
+      doubleVec vx(model.nIn);
+      memcpy(model.var_x, &vx[0],sizeof(double)*model.nIn);
       return vx;
    }
    
    /** \brief Sets the input normalisation (expected scale or standard deviation
       of input data */
-   void normIn(const Eigen::VectorXd& norm) {
+   void normIn(const doubleVec& norm) {
       if (norm.size()!=(unsigned) model.nIn) {
          throw LWPR_Exception(LWPR_Exception::BAD_INPUT_DIM);      
       }
-      memcpy(model.norm_in,norm.data(),sizeof(double)*model.nIn);
-   }
-   void normIn(double norm) {
-      Eigen::VectorXd vectNorm(model.nIn);
-      for (size_t i=0;i<(size_t)model.nIn;i++) {
-          vectNorm(i) = norm;
-      }
-      memcpy(model.norm_in,vectNorm.data(),sizeof(double)*model.nIn);
+      memcpy(model.norm_in,&norm[0],sizeof(double)*model.nIn);
    }
 
    /** \brief Returns the input normalisation factors */
-   Eigen::VectorXd normIn() const {
-       Eigen::VectorXd norm(model.nIn);
-      memcpy(norm.data(),model.norm_in,sizeof(double)*model.nIn);
+   doubleVec normIn() const {
+      doubleVec norm(model.nIn);
+      memcpy(&norm[0],model.norm_in,sizeof(double)*model.nIn);
       return norm;
    }
    
    /** \brief Sets the output normalisation (expected scale or standard deviation
       of output data */
-   void normOut(const Eigen::VectorXd& norm) {
+   void normOut(const doubleVec& norm) {
       if (norm.size()!=(unsigned) model.nOut) {
          throw LWPR_Exception(LWPR_Exception::BAD_OUTPUT_DIM);
       }
-      memcpy(model.norm_out,norm.data(),sizeof(double)*model.nOut);
+      memcpy(model.norm_out,&norm[0],sizeof(double)*model.nOut);
    }
 
    /** \brief Returns the output normalisation factors */
-   Eigen::VectorXd normOut() const {
-       Eigen::VectorXd norm(model.nOut);
-      memcpy(norm.data(),model.norm_out,sizeof(double)*model.nOut);
+   doubleVec normOut() const {
+      doubleVec norm(model.nOut);
+      memcpy(&norm[0],model.norm_out,sizeof(double)*model.nOut);
       return norm;
    }
    
    /** \brief Returns the number of receptive fields for output dimension "outDim" */
-   int numRFS(int outDim = 0) const {
+   int numRFS(int outDim) {
       if (outDim < 0 || outDim >= model.nOut) return 0;
       return model.sub[outDim].numRFS;
+   }
+   
+   /** \brief Returns the number of receptive fields for all output dimensions */
+   std::vector<int> numRFS() {
+      std::vector<int> num(model.nOut);
+      for (int i=0;i<model.nOut;i++) num[i] = model.sub[i].numRFS;
+      return num;
    }
    
    /** \brief Returns a wrapper object for inspecting a receptive field. 
@@ -670,9 +659,6 @@ class LWPR_Object {
       are fine, but updates may result in pruning just the receptive field
       this wrapper points to!!!   
    */
-   LWPR_ReceptiveFieldObject getRF(int index) const {
-      return getRF(0, index);
-   }
    LWPR_ReceptiveFieldObject getRF(int outDim, int index) const {
       if (outDim < 0 || outDim >= model.nOut) {
          throw LWPR_Exception(LWPR_Exception::OUT_OF_RANGE);
