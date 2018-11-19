@@ -877,8 +877,6 @@ static PyMethodDef PyLWPR_methods[] = {
     "rf_mean_x(dim,n) retrieves the training data mean associated with of the n-th receptive field in output dimension dim."},
     {"rf_D", (PyCFunction)PyLWPR_rf_D, METH_VARARGS,
     "rf_D(dim,n) retrieves the distance metric of the n-th receptive field in output dimension dim."},
-    {"rf_D", (PyCFunction)PyLWPR_rf_D, METH_VARARGS,
-    "rf_D(dim,n) retrieves the distance metric of the n-th receptive field in output dimension dim."},
     {"rf_trustworthy", (PyCFunction)PyLWPR_rf_trustworthy, METH_VARARGS,
     "rf_trustworthy(dim,n) returns true if the n-th receptive field in the output dimension dim is deemed trustworthy"},
     {"beta", (PyCFunction)PyLWPR_beta, METH_VARARGS,
