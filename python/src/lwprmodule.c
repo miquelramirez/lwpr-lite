@@ -753,7 +753,7 @@ static PyObject *PyLWPR_beta(PyLWPR* self, PyObject* args) {
 
     if (!model->sub[dim].rf[n]->slopeReady) {
 
-        PyErr_SetString(PyExc_TypeError, "Slope of linear regression is not ready");
+        PyErr_SetString(PyExc_RuntimeError, "Slope of linear regression is not ready");
         return NULL;
     }
 
