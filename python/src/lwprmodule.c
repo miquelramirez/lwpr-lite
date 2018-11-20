@@ -751,7 +751,13 @@ static PyObject *PyLWPR_beta(PyLWPR* self, PyObject* args) {
        return NULL;
     }
 
-    return get_array_from_vector(model->nIn, model->sub[dim].rf[n]->beta);
+    if (!model->sub[dim].rf[n]->slopeReady) {
+
+        PyErr_SetString(PyExc_TypeError, "Slope of linear regression is not ready");
+        return NULL;
+    }
+
+    return get_array_from_vector(model->nIn, model->sub[dim].rf[n]->slope);
 }
 
 static PyObject *PyLWPR_beta0(PyLWPR* self, PyObject* args) {
